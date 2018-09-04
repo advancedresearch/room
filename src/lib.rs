@@ -426,29 +426,38 @@ mod tests {
 
     #[test]
     fn test_move() {
+        let it = 1;
+        let that = 2;
         let mut room = Room::new(vec![He, It, That]);
         room.action(&He.moves(It, on(That))).unwrap();
-        assert!(room.objects[1].is_on(That));
+        assert!(room.objects[it].is_on(That));
+        assert!(!room.objects[that].is_on(It));
         room.action(&He.moves(That, on(It))).unwrap();
-        assert!(room.objects[2].is_on(It));
-        assert!(!room.objects[1].is_on(That));
+        assert!(room.objects[that].is_on(It));
+        assert!(!room.objects[it].is_on(That));
     }
 
     #[test]
     fn test_give() {
+        let he = 0;
+        let she = 1;
         let mut room = Room::new(vec![He, She, It]);
         room.action(&He.gives_item(She, It)).unwrap();
-        assert!(room.objects[1].has(It));
+        assert!(room.objects[she].has(It));
+        assert!(!room.objects[he].has(It));
         room.action(&She.gives_item(He, It)).unwrap();
-        assert!(room.objects[0].has(It));
-        assert!(!room.objects[1].has(It));
+        assert!(room.objects[he].has(It));
+        assert!(!room.objects[she].has(It));
 
+        let she = 0;
+        let peter = 1;
         let mut room = Room::new(vec![She, called("Peter"), It]);
         room.action(&She.gives_item(called("Peter"), It)).unwrap();
-        assert!(room.objects[1].has(It));
+        assert!(room.objects[peter].has(It));
+        assert!(!room.objects[she].has(It));
         room.action(&called("Peter").gives_item(She, It)).unwrap();
-        assert!(room.objects[0].has(It));
-        assert!(!room.objects[1].has(It));
+        assert!(room.objects[she].has(It));
+        assert!(!room.objects[peter].has(It));
 
         let mut room = Room::new(vec![He, It]);
         // Can not give something to the same object.
@@ -459,49 +468,71 @@ mod tests {
 
     #[test]
     fn test_names() {
+        let he = 0;
         let mut room = Room::new(vec![He]);
-        room.objects[0].push(called("Peter"));
-        assert!(room.objects[0].matches(&And(vec![He, called("Peter")])));
+        room.objects[he].push(called("Peter"));
+        assert!(room.objects[he].matches(&And(vec![He, called("Peter")])));
     }
 
     #[test]
     fn test_kill() {
+        let he = 0;
+        let she = 1;
         let mut room = Room::new(vec![He, She]);
+        assert!(!room.objects[she].matches(&Dead.into()));
+        assert!(!room.objects[he].matches(&Murderer.into()));
         room.action(&He.kills(She)).unwrap();
-        assert!(room.objects[1].matches(&Dead.into()));
-        assert!(room.objects[0].matches(&Murderer.into()));
-        assert!(room.objects[1].was_killed_by(He));
-        assert!(room.objects[0].killed(She));
+        assert!(room.objects[she].matches(&Dead.into()));
+        assert!(room.objects[he].matches(&Murderer.into()));
+        assert!(room.objects[she].was_killed_by(He));
+        assert!(room.objects[he].killed(She));
 
+        let peter = 0;
+        let john = 1;
+        let sheila = 2;
         let mut room = Room::new(vec![called("Peter"), called("John"), called("Sheila")]);
+        assert!(!room.objects[peter].matches(&Dead.into()));
+        assert!(!room.objects[peter].killed(called("John")));
+        assert!(!room.objects[peter].was_killed_by(called("Sheila")));
+        assert!(!room.objects[john].matches(&Dead.into()));
+        assert!(!room.objects[john].was_killed_by(called("Peter")));
+        assert!(!room.objects[sheila].matches(&Dead.into()));
+        assert!(!room.objects[sheila].killed(killed(called("John"))));
         room.action(&called("Peter").kills(called("John"))).unwrap();
         room.action(&called("Sheila").kills(killed(called("John")))).unwrap();
-        assert!(room.objects[0].matches(&Dead.into()));
-        assert!(room.objects[0].killed(called("John")));
-        assert!(room.objects[0].was_killed_by(called("Sheila")));
-        assert!(room.objects[1].matches(&Dead.into()));
-        assert!(room.objects[1].was_killed_by(called("Peter")));
-        assert!(!room.objects[2].matches(&Dead.into()));
-        assert!(room.objects[2].killed(killed(called("John"))));
+        assert!(room.objects[peter].matches(&Dead.into()));
+        assert!(room.objects[peter].killed(called("John")));
+        assert!(room.objects[peter].was_killed_by(called("Sheila")));
+        assert!(room.objects[john].matches(&Dead.into()));
+        assert!(room.objects[john].was_killed_by(called("Peter")));
+        assert!(!room.objects[sheila].matches(&Dead.into()));
+        assert!(room.objects[sheila].killed(killed(called("John"))));
     }
 
     #[test]
     fn test_talk() {
+        let i = 0;
+        let you = 1;
         let mut room = Room::new(vec![I, You]);
+        assert!(!room.objects[i].talked_to(You));
+        assert!(!room.objects[you].was_talked_to_by(I));
         room.action(&I.talk_to(You)).unwrap();
-        assert!(room.objects[0].talked_to(You));
-        assert!(room.objects[1].was_talked_to_by(I));
+        assert!(room.objects[i].talked_to(You));
+        assert!(room.objects[you].was_talked_to_by(I));
     }
 
     #[test]
     fn test_door() {
+        let door = 0;
         let mut room = Room::new(vec![of_type("door"), I]);
+        assert!(!room.objects[door].matches(&Open.into()));
+        assert!(!room.objects[door].matches(&Closed.into()));
         room.action(&I.opens(of_type("door"))).unwrap();
-        assert!(room.objects[0].matches(&Open.into()));
-        assert!(!room.objects[0].matches(&Closed.into()));
+        assert!(room.objects[door].matches(&Open.into()));
+        assert!(!room.objects[door].matches(&Closed.into()));
         room.action(&I.closes(of_type("door"))).unwrap();
-        assert!(room.objects[0].matches(&Closed.into()));
-        assert!(!room.objects[0].matches(&Open.into()));
+        assert!(room.objects[door].matches(&Closed.into()));
+        assert!(!room.objects[door].matches(&Open.into()));
         // Can not walk through door because it is closed.
         assert!(room.action(&I.walks_through(of_type("door"))).is_err());
         room.action(&I.opens(of_type("door"))).unwrap();
@@ -530,6 +561,8 @@ mod tests {
 
     #[test]
     fn test_ladder() {
+        let ladder = 0;
+        let i = 4;
         let mut room = Room::new(vec![
             of_type("ladder"),
             of_type("roof"),
@@ -538,47 +571,50 @@ mod tests {
             And(vec![I, has_not(of_type("ladder"))]),
         ]);
         room.action(&I.carries(of_type("ladder"))).unwrap();
-        assert!(!room.objects[4].has_not(of_type("ladder")));
-        assert!(room.objects[4].has(of_type("ladder")));
+        assert!(!room.objects[i].has_not(of_type("ladder")));
+        assert!(room.objects[i].has(of_type("ladder")));
         room.action(&I.puts_down(of_type("ladder"))).unwrap();
-        assert!(!room.objects[4].has(of_type("ladder")));
-        assert!(room.objects[4].has_not(of_type("ladder")));
+        assert!(!room.objects[i].has(of_type("ladder")));
+        assert!(room.objects[i].has_not(of_type("ladder")));
         room.action(&of_type("ladder").stands_on(of_type("ground"))).unwrap();
-        assert!(room.objects[0].is_on(of_type("ground")));
+        assert!(room.objects[ladder].is_on(of_type("ground")));
         room.action(&of_type("ladder").leans_toward(of_type("wall"))).unwrap();
-        assert!(room.objects[0].is_leaning_toward(of_type("wall")));
+        assert!(room.objects[ladder].is_leaning_toward(of_type("wall")));
         room.action(&I.climbs_to(of_type("ladder"), on(of_type("roof")))).unwrap();
-        assert!(room.objects[4].is_on(of_type("roof")));
+        assert!(room.objects[i].is_on(of_type("roof")));
         room.action(&I.picks_up(of_type("ladder"))).unwrap();
-        assert!(!room.objects[0].is_on(of_type("ground")));
+        assert!(!room.objects[ladder].is_on(of_type("ground")));
     }
 
     #[test]
     fn test_sleep() {
+        let i = 1;
         let mut room = Room::new(vec![
             of_type("bed"),
             I
         ]);
         room.action(&I.sleeps_in(of_type("bed"))).unwrap();
-        assert!(room.objects[1].is_in(of_type("bed")));
+        assert!(room.objects[i].is_in(of_type("bed")));
         room.action(&I.wakes_up_in(of_type("bed"))).unwrap();
         room.action(&I.climbs_out_of(of_type("bed"))).unwrap();
-        assert!(!room.objects[1].is_in(of_type("bed")));
-        assert!(room.objects[1].is_out_of(of_type("bed")));
+        assert!(!room.objects[i].is_in(of_type("bed")));
+        assert!(room.objects[i].is_out_of(of_type("bed")));
         room.action(&I.climbs_into(of_type("bed"))).unwrap();
-        assert!(!room.objects[1].is_out_of(of_type("bed")));
-        assert!(room.objects[1].is_in(of_type("bed")));
+        assert!(!room.objects[i].is_out_of(of_type("bed")));
+        assert!(room.objects[i].is_in(of_type("bed")));
     }
 
     #[test]
     fn test_chess() {
+        let i = 1;
+        let you = 2;
         let mut room = Room::new(vec![
             And(vec![called("chess"), of_type("game")]),
             I,
             You
         ]);
         room.action(&I.plays_against(called("chess"), You)).unwrap();
-        assert!(room.objects[1].is_opponent_of(You));
-        assert!(room.objects[2].is_opponent_of(I));
+        assert!(room.objects[i].is_opponent_of(You));
+        assert!(room.objects[you].is_opponent_of(I));
     }
 }
