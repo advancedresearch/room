@@ -137,7 +137,8 @@ impl Object {
         Action::Do {
             subject: self.clone(), verb: Verb::Lock, object: object.clone(),
             decorate: vec![
-                (object.clone(), Adjective::Locked.into())
+                (object.clone(), Adjective::Locked.into()),
+                (object.clone(), Adjective::Closed.into()),
             ],
             remove: vec![
                 (object.clone(), Adjective::Unlocked.into())
