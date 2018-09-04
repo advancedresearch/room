@@ -543,6 +543,24 @@ mod tests {
         assert!(room.objects[i].is_on(of_type("roof")));
         room.action(&I.picks_up(of_type("ladder"))).unwrap();
         assert!(!room.objects[ladder].is_on(of_type("ground")));
+
+        // Move ladder so it leans against the wall,
+        // then move it again so it leans against the box.
+        let ladder = 1;
+        let mut room = Room::new(vec![
+            I,
+            of_type("ladder"),
+            of_type("wall"),
+            of_type("box"),
+        ]);
+        assert!(!room.objects[ladder].is_leaning_toward(of_type("wall")));
+        assert!(!room.objects[ladder].is_leaning_toward(of_type("box")));
+        room.action(&I.moves(of_type("ladder"), lean_toward(of_type("wall")))).unwrap();
+        assert!(room.objects[ladder].is_leaning_toward(of_type("wall")));
+        assert!(!room.objects[ladder].is_leaning_toward(of_type("box")));
+        room.action(&I.moves(of_type("ladder"), lean_toward(of_type("box")))).unwrap();
+        assert!(!room.objects[ladder].is_leaning_toward(of_type("wall")));
+        assert!(room.objects[ladder].is_leaning_toward(of_type("box")));
     }
 
     #[test]
