@@ -1,6 +1,23 @@
 use *;
 
 impl Object {
+    /// Moves object to some place.
+    pub fn moves(self, object: Object, place: Placement) -> Action {
+        Action::Do {
+            subject: self.clone(), verb: Verb::Move, object: object.clone(),
+            decorate: vec![(object.clone(), place.clone().into())],
+            remove: if let Placement::On(_) = place {
+                vec![(place.obj_ref().clone(), on(object.clone()).into())]
+            } else {
+                vec![]
+            },
+            remove_placement: vec![object.clone()],
+            require: vec![],
+            prevent: vec![],
+            distinct: vec![self, object],
+        }
+    }
+
     /// Give object an item.
     ///
     /// The item must be unique,

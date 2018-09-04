@@ -8,6 +8,7 @@ pub enum Verb {
     Kill,
     LeanToward,
     Lock,
+    Move,
     Open,
     PickUp,
     Play,
