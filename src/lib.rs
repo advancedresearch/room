@@ -221,44 +221,47 @@ impl Object {
         }
     }
 
-    /// Move object.
-    pub fn moves(self, object: Object, place: Placement) -> Action {
-        Action::Move {subject: self, object, place}
-    }
-
-    /// Returns `true` if object has another object.
+    /// Returns `true` if self has another object.
     pub fn has(&self, obj: Object) -> bool {self.matches(&has(obj))}
-    /// Returns `true` if object has not another object.
+    /// Returns `true` if self has not another object.
     pub fn has_not(&self, obj: Object) -> bool {self.matches(&has_not(obj))}
-    /// Returns `true` if object is on another object.
+    /// Returns `true` if self is on another object.
     pub fn is_on(&self, obj: Object) -> bool {
         self.matches(&on(obj).into())
     }
-    /// Returns `true` if object leans toward another object.
+    /// Returns `true` if self leans toward another object.
     pub fn is_leaning_toward(&self, obj: Object) -> bool {
         self.matches(&lean_toward(obj).into())
     }
-    /// Returns `true` if object is in another object.
+    /// Returns `true` if self is in another object.
     pub fn is_in(&self, obj: Object) -> bool {
         self.matches(&in_(obj).into())
     }
-    /// Returns `true` if object is out of another object.
+    /// Returns `true` if self is out of another object.
     pub fn is_out_of(&self, obj: Object) -> bool {
         self.matches(&out_of(obj).into())
     }
-    /// Returns `true` if object was killed by another object.
+    /// Returns `true` if self was killed by another object.
     pub fn was_killed_by(&self, obj: Object) -> bool {self.matches(&killed_by(obj))}
-    /// Returns `true` if object killed another object.
+    /// Returns `true` if self killed another object.
     pub fn killed(&self, obj: Object) -> bool {self.matches(&killed(obj))}
-    /// Returns `true` if object talked to another object.
+    /// Returns `true` if self talked to another object.
     pub fn talked_to(&self, obj: Object) -> bool {
         self.matches(&Object::DidTo(Verb::Talk, Box::new(obj)))
     }
-    /// Returns `true` if object was talked to by another object.
+    /// Returns `true` if self was talked to by another object.
     pub fn was_talked_to_by(&self, obj: Object) -> bool {
         self.matches(&Object::WasBy(Verb::Talk, Box::new(obj)))
     }
-    /// Returns `true` if object is opponent of another object.
+    /// Returns `true` if self was moved by another object.
+    pub fn was_moved_by(&self, obj: Object) -> bool {
+        self.matches(&Object::WasBy(Verb::Move, Box::new(obj)))
+    }
+    /// Returns `true` if self moved another object.
+    pub fn moved(&self, obj: Object) -> bool {
+        self.matches(&Object::DidTo(Verb::Move, Box::new(obj)))
+    }
+    /// Returns `true` if self is opponent of another object.
     pub fn is_opponent_of(&self, obj: Object) -> bool {
         self.matches(&opponent_of(obj).into())
     }
@@ -266,8 +269,6 @@ impl Object {
 
 /// Stores an action.
 pub enum Action {
-    /// Move something.
-    Move {subject: Object, object: Object, place: Placement},
     /// Do something.
     Do {
         /// The subject.
@@ -317,28 +318,6 @@ impl Room {
     /// Executate an action in the room.
     pub fn action(&mut self, action: &Action) -> Result<(), ()> {
         match *action {
-            Action::Move {ref subject, ref object, ref place} => {
-                match (self.find(subject), self.find(object)) {
-                    (Ok(a), Ok(b)) if a != b => {
-                        if let Ok(c) = self.find(place.obj_ref()) {
-                            self.objects[b].remove_placement();
-                            match *place {
-                                Placement::On(_) => {
-                                    self.objects[c].remove(&on(object.clone()).into());
-                                }
-                                Placement::LeanToward(_) => {}
-                                Placement::In(_) => {}
-                                Placement::OutOf(_) => {}
-                            }
-                            self.objects[b].push(place.clone().into());
-                            Ok(())
-                        } else {
-                            Err(())
-                        }
-                    }
-                    _ => Err(()),
-                }
-            }
             Action::Do {
                 ref subject,
                 verb,
@@ -435,6 +414,17 @@ mod tests {
         room.action(&He.moves(That, on(It))).unwrap();
         assert!(room.objects[that].is_on(It));
         assert!(!room.objects[it].is_on(That));
+
+        let he = 0;
+        let that = 1;
+        let mut room = Room::new(vec![He, That]);
+        // Can not move itself.
+        assert!(room.action(&He.moves(He, on(That))).is_err());
+        // Can move something on itself.
+        assert!(room.action(&He.moves(That, on(He))).is_ok());
+        assert!(room.objects[that].is_on(He));
+        assert!(room.objects[that].was_moved_by(He));
+        assert!(room.objects[he].moved(That));
     }
 
     #[test]
