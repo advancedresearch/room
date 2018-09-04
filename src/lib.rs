@@ -276,11 +276,11 @@ pub enum Action {
         verb: Verb,
         /// The object.
         object: Object,
-        /// Decorate subject with new properties.
+        /// Decorate with new properties.
         decorate: Vec<(Object, Object)>,
-        /// Remove properties from subject.
+        /// Remove properties.
         remove: Vec<(Object, Object)>,
-        /// Remove placement properties from subject.
+        /// Remove placement properties.
         remove_placement: Vec<Object>,
         /// Properties that prevents the action from happening.
         prevent: Vec<(Object, Object)>,
